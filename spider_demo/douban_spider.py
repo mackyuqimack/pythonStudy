@@ -39,7 +39,7 @@ def get_detail(html):
     """
     获取详情
     """
-    detail_list = html.find(class_="grid_view").find_all("div", class_="bd")
+    detail_list = html.find_all("div", class_="bd")
     for i in detail_list:
         # yield fr"{i.p.text}".strip()
         try:
@@ -52,7 +52,7 @@ def get_num(html):
     """
     获取排名
     """
-    num_list = html.find(class_="grid_view").find_all("div", class_="pic")
+    num_list = html.find_all("div", class_="pic")
     for i in num_list:
         yield i.em.text
 
@@ -77,7 +77,7 @@ def main():
     for i in range(total_page):
         url_i = f"https://movie.douban.com/top250?start={i * 25}&filter="
         resp = requests.get(url=url_i, headers=headers)
-        html = BeautifulSoup(resp.text, 'html.parser')
+        html = BeautifulSoup(resp.text, 'html.parser').find(class_="grid_view")
         num_list = get_num(html)
         title_list = get_title(html)
         score_list = get_score(html)
