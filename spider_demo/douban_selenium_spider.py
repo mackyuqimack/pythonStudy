@@ -3,6 +3,7 @@ from selenium import webdriver
 path = "https://movie.douban.com/top250?start=0&filter="
 chromedriver_path = "D:/software/chromedriver/chromedriver.exe"
 driver = webdriver.Chrome(chromedriver_path)
+driver.maximize_window()
 film_info_list = []
 
 
