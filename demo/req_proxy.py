@@ -41,5 +41,10 @@ random_num = random.randint(0, len(ip_list) - 1)
 print(random_num)
 ip = ip_list[random_num]
 print(ip)
-resp = requests.get("https://www.ip.cn/api/index?ip=&type=0", headers=headers, proxies={"https": "47.75.254.142:8888"})
+proxyies = {
+    "http": "39.98.45.168:8081",
+    "https": "8.210.157.49:17309"
+}
+# resp = requests.get("https://www.ip.cn/api/index?ip=&type=0", headers=headers, proxies=proxyies)
+resp = requests.get("http://2021.ip138.com/ic.asp", headers=headers, proxies=proxyies)
 print(resp.text)
