@@ -34,7 +34,7 @@ def get_page_info():
     film_info_list += list(zip(num_list, title_list, score_list, detail_list))
 
 
-def isElementExist(element, name):
+def is_element_exist(element, name):
     """
     用来判断元素是否存在
     :param element:
@@ -54,7 +54,7 @@ def main():
     # 翻页
     flag = True
     while flag:
-        flag = isElementExist(driver.find_element_by_class_name("next"), "a")
+        flag = is_element_exist(driver.find_element_by_class_name("next"), "a")
         print("正在执行第", driver.find_element_by_class_name("thispage").text, "页")
         driver.find_element_by_class_name("next").click()
         get_page_info()
