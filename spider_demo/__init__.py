@@ -1,1 +1,1 @@
-# http://npm.taobao.org/mirrors/chromedriver/
+# https://npm.taobao.org/mirrors/chromedriver/

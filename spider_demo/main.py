@@ -24,7 +24,7 @@ chrome_options.add_argument("--auto-open-devtools-for-tabs")
 # d = DesiredCapabilities.CHROME
 # d['loggingPrefs'] = { 'performance':'ALL' }
 
-url = 'http://npm.taobao.org/mirrors/chromedriver/'  # chromedriver download link
+url = 'https://npm.taobao.org/mirrors/chromedriver/'  # chromedriver download link
 
 
 def get_path():
@@ -41,7 +41,6 @@ def get_Chrome_version():
 def get_server_chrome_versions():
     '''return all versions list'''
     versionList = []
-    url = "http://npm.taobao.org/mirrors/chromedriver/"
     rep = requests.get(url).text
     result = re.compile(r'\d.*?/</a>.*?Z').findall(rep)
     for i in result:

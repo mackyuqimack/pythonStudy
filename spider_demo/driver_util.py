@@ -7,7 +7,7 @@ import zipfile
 import requests
 
 # chromedriver download link
-url = 'http://npm.taobao.org/mirrors/chromedriver/'
+url = 'https://npm.taobao.org/mirrors/chromedriver/'
 
 __all__ = ['check_update_chromedriver', 'get_chromedriver_path']
 
@@ -25,7 +25,6 @@ def get_chrome_version():
 def get_server_chrome_versions():
     '''return all versions list'''
     versionList = []
-    url = "http://npm.taobao.org/mirrors/chromedriver/"
     rep = requests.get(url).text
     result = re.compile(r'\d.*?/</a>.*?Z').findall(rep)
     for i in result:
