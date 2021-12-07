@@ -137,7 +137,7 @@ def find_and_paste(cookie):
             pt_pin = item.get('value')
         if 'pt_key' == item.get('name'):
             pt_key = item.get('value')
-    jd_cookie = 'pt_pin=' + pt_pin + ';' + 'pt_pin=' + pt_key + ';'
+    jd_cookie = 'pt_pin=' + pt_pin + ';' + 'pt_key=' + pt_key + ';'
     pyperclip.copy(jd_cookie)
     return jd_cookie
 
@@ -177,8 +177,9 @@ def main():
         cookie.append(request)
 
     print('jd_cookie: ', find_and_paste(cookie))
-    print('已复制到剪切板！')
     driver.quit()
+    print('已复制到剪切板！')
+    input('登陆后按Enter键继续...')
 
 
 if __name__ == '__main__':
