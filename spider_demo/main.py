@@ -32,7 +32,7 @@ def get_path():
     # return os.path.dirname(os.path.realpath(__file__))
 
 
-def get_Chrome_version():
+def get_chrome_version():
     key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Google\Chrome\BLBeacon')
     version, types = winreg.QueryValueEx(key, 'version')
     return version
@@ -101,7 +101,7 @@ def unzip_driver(path):
 
 def check_update_chromedriver():
     try:
-        chromeVersion = get_Chrome_version()
+        chromeVersion = get_chrome_version()
     except:
         print('未安装Chrome，请在GooGle Chrome官网：https://www.google.cn/chrome/ 下载。')
         return 0
