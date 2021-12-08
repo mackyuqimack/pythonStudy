@@ -1,8 +1,10 @@
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
 
 path = "https://movie.douban.com/top250?start=0&filter="
-chromedriver_path = "D:/software/chromedriver/chromedriver.exe"
-driver = webdriver.Chrome(chromedriver_path)
+chromedriver_path = Service("D:/software/chromedriver/chromedriver.exe")
+driver = webdriver.Chrome(service=chromedriver_path)
 driver.maximize_window()
 film_info_list = []
 
@@ -16,20 +18,20 @@ def get_page_info():
     score_list = []
     # 详情列表
     detail_list = []
-    hd_list = driver.find_elements_by_class_name("hd")
+    hd_list = driver.find_elements(By.CLASS_NAME, "hd")
     for i in hd_list:
-        title_list.append(i.find_element_by_class_name("title").text)
-    bd_list = driver.find_element_by_class_name("grid_view").find_elements_by_class_name("bd")
+        title_list.append(i.find_element(By.CLASS_NAME, "title").text)
+    bd_list = driver.find_element(By.CLASS_NAME, "grid_view").find_elements(By.CLASS_NAME, "bd")
     for i in bd_list:
-        score_list.append(i.find_element_by_class_name("rating_num").text)
+        score_list.append(i.find_element(By.CLASS_NAME, "rating_num").text)
         try:
-            detail_split = i.find_element_by_tag_name("p").text.split("\n")
+            detail_split = i.find_element(By.TAG_NAME, "p").text.split("\n")
             detail_list.append(detail_split[0].strip() + detail_split[1].strip())
         except:
             continue
-    item_list = driver.find_elements_by_class_name("item")
+    item_list = driver.find_elements(By.CLASS_NAME, "item")
     for i in item_list:
-        num_list.append(i.find_element_by_tag_name("em").text)
+        num_list.append(i.find_element(By.TAG_NAME, "em").text)
     global film_info_list
     film_info_list += list(zip(num_list, title_list, score_list, detail_list))
 
@@ -42,7 +44,7 @@ def is_element_exist(element, name):
     """
     flag = True
     try:
-        element.find_element_by_css_selector(name)
+        element.find_element(By.CSS_SELECTOR, name)
     except:
         flag = False
     return flag
@@ -54,9 +56,9 @@ def main():
     # 翻页
     flag = True
     while flag:
-        flag = is_element_exist(driver.find_element_by_class_name("next"), "a")
-        print("正在执行第", driver.find_element_by_class_name("thispage").text, "页")
-        driver.find_element_by_class_name("next").click()
+        flag = is_element_exist(driver.find_element(By.CLASS_NAME, "next"), "a")
+        print("正在执行第", driver.find_element(By.CLASS_NAME, "thispage").text, "页")
+        driver.find_element(By.CLASS_NAME, "next").click()
         get_page_info()
     driver.quit()
     for num, title, score, detail in film_info_list:
