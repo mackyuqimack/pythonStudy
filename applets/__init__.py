@@ -1,0 +1,1 @@
+# pyinstaller -F -i ../ico/favicon.ico xx.py

@@ -2,11 +2,11 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 
-from spider_demo import driver_util
+from util import driver
 
 path = "https://www.baidu.com"
-driver_util.check_update_chromedriver()
-chromedriver_path = Service(driver_util.get_chromedriver_path())
+driver.check_update_chromedriver()
+chromedriver_path = Service(driver.get_chromedriver_path())
 driver = webdriver.Chrome(service=chromedriver_path)
 driver.maximize_window()
 
