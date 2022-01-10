@@ -1,10 +1,9 @@
-import traceback
-
+# -*- coding: utf8 -*-
+import json
 import requests
-from lovelive import get_one_words
 
-token = "60df29e93eae4420a4f96cec21b4d66b"
-push_plus_url = "http://www.pushplus.plus/send"
+token = "01e1e4eb2db8462e9a5a6a273aacf255"
+push_plus_url = "https://www.pushplus.plus/send"
 form_header = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.106 Safari/537.36',
     'Content-Type': 'application/x-www-form-urlencoded'
@@ -23,22 +22,36 @@ def send_msg(title, msg):
         "content": msg,
         "template": "txt"
     }
-    if push_plus_url is None or len(push_plus_url.strip()) == 0:
-        print("未填入发送信息地址，将不发送消息提醒。")
-        print(msg)
-        input('Press any key to quit program.')
-    else:
+    try:
         requests.post(url=push_plus_url, headers=form_header, data=msg_data)
+    except requests.exceptions.RequestException as exception:
+        print(exception)
+
+
+def get_lovelive_info():
+    """
+    从土味情话中获取每日一句。
+    :return: str,土味情话。
+    """
+    print('获取土味情话...')
+    try:
+        resp = requests.get('https://api.lovelive.tools/api/SweetNothings')
+        if resp.status_code == 200:
+            return resp.text
+        print('土味情话获取失败。')
+    except requests.exceptions.RequestException as exception:
+        print(exception)
+    return None
 
 
 def main():
-    title = get_one_words()
+    title = get_lovelive_info()
     send_msg(title, "指尖上的学霸晚上答题")
 
 
-if __name__ == '__main__':
-    try:
-        main()
-    except:
-        traceback.print_exc()
-        input('Press any key to quit program.')
+def main_handler(event, context):
+    print("Received event: " + json.dumps(event, indent=2))
+    print("Received context: " + str(context))
+    print("Hello world")
+    main()
+    return ("Hello World")
