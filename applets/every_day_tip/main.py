@@ -1,5 +1,8 @@
 # -*- coding: utf8 -*-
 import json
+import time
+import traceback
+
 import requests
 
 token = "01e1e4eb2db8462e9a5a6a273aacf255"
@@ -43,10 +46,40 @@ def get_lovelive_info():
         print(exception)
     return None
 
+def get_holiday():
+    """
+    获取节假日信息
+    :return: flag:1=工作，0=休息,name:当前日期。
+    """
+    print("获取节假日信息...")
+    holiday_url = "https://timor.tech/api/holiday/info/"
+    now = time.strftime("%Y-%m-%d", time.localtime())
+    target_url = holiday_url + now
+    try:
+        resp = requests.get(target_url)
+        if resp.status_code == 200:
+            resp_json = resp.json()
+            if resp_json["code"] == 0:
+                resp_type = resp_json['type']
+                # 节假日类型，分别表示工作日、周末、节日、调休。
+                type = resp_type['type']
+                # 1上班 0休息
+                flag = 0
+                if type == 0 or type == 3:
+                    flag = 1
+                name = resp_type['name']
+                return flag, name
+        print('节假日信息获取失败。')
+    except:
+        print('节假日信息获取异常。')
+        traceback.print_exc()
+    return 1, ""
 
 def main():
-    title = get_lovelive_info()
-    send_msg(title, "指尖上的学霸晚上答题")
+    flag, name = get_holiday()
+    if flag == 1:
+        title = get_lovelive_info()
+        send_msg(title, name + "指尖上的学霸晚上答题")
 
 
 def main_handler(event, context):
