@@ -1,4 +1,4 @@
-import re
+# import re
 import os
 import sys
 import traceback
@@ -24,7 +24,7 @@ chrome_options.add_argument("--auto-open-devtools-for-tabs")
 # d = DesiredCapabilities.CHROME
 # d['loggingPrefs'] = { 'performance':'ALL' }
 
-url = 'https://npm.taobao.org/mirrors/chromedriver/'  # chromedriver download link
+url = 'https://registry.npmmirror.com/-/binary/chromedriver/'  # chromedriver download link
 
 
 def get_path():
@@ -41,10 +41,15 @@ def get_chrome_version():
 def get_server_chrome_versions():
     '''return all versions list'''
     versionList = []
-    rep = requests.get(url).text
-    result = re.compile(r'\d.*?/</a>.*?Z').findall(rep)
-    for i in result:
-        version = re.compile(r'.*?/').findall(i)[0]  # 提取版本号
+    # rep = requests.get(url).text
+    # result = re.compile(r'\d.*?/</a>.*?Z').findall(rep)
+    # for i in result:
+    #     version = re.compile(r'.*?/').findall(i)[0]  # 提取版本号
+    #     versionList.append(version[:-1])  # 将所有版本存入列表
+    # return versionList
+    rep = requests.get(url).json()
+    for i in rep:
+        version = i['name']  # 提取版本号
         versionList.append(version[:-1])  # 将所有版本存入列表
     return versionList
 
