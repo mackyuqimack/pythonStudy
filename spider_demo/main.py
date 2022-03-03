@@ -49,8 +49,10 @@ def get_server_chrome_versions():
     # return versionList
     rep = requests.get(url).json()
     for i in rep:
-        version = i['name']  # 提取版本号
-        versionList.append(version[:-1])  # 将所有版本存入列表
+        version = i["name"].replace("/", "")  # 提取版本号
+        versionList.append(version)  # 将所有版本存入列表
+        # version = i['name']  # 提取版本号
+        # versionList.append(version[:-1])  # 将所有版本存入列表
     return versionList
 
 
