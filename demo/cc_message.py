@@ -34,4 +34,4 @@ def send_msg(content, chat_user):
 
 
 if __name__ == '__main__':
-    send_msg("123", "李通")
+    send_msg("内容", "姓名")
