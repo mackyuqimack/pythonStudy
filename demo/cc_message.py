@@ -21,7 +21,7 @@ def send_msg(content, chat_user):
     time.sleep(1)
 
     search.SendKey(key=auto.SpecialKeyNames['ENTER'], waitTime=0.2)
-    edit = yg_window.GroupControl(Name='', AutomationId='msg-chat-input-editor-content')
+    edit = message.GetParentControl().GroupControl(Name='', AutomationId='msg-chat-input-editor-content')
     # edit.SetFocus()
     # time.sleep(2)
     # yg_window.SendKeys(text='{Ctrl}a')
@@ -34,4 +34,4 @@ def send_msg(content, chat_user):
 
 
 if __name__ == '__main__':
-    send_msg("内容", "姓名")
+    send_msg("内容", "李通")
