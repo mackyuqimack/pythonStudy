@@ -22,10 +22,19 @@ def send_msg(content, chat_user):
 
     search.SendKey(key=auto.SpecialKeyNames['ENTER'], waitTime=0.2)
     edit = message.GetParentControl().GroupControl(Name='', AutomationId='msg-chat-input-editor-content')
-    # edit.SetFocus()
-    # time.sleep(2)
-    # yg_window.SendKeys(text='{Ctrl}a')
-    # yg_window.SendKey(key=auto.SpecialKeyNames['DELETE'])
+    # edit.SendKeys(text='{Ctrl}a')
+    # edit.SendKey(key=auto.SpecialKeyNames['DELETE'])
+
+    # 避免之前对话框有内容
+    if edit.GetChildren():
+        print("当前对话框有内容")
+        edit.SetFocus()
+        time.sleep(1)
+        edit.Click()
+        for i in range(2):
+            time.sleep(1)
+            auto.SendKey(key=auto.SpecialKeyNames['BACK'], waitTime=0.2)
+            auto.SendKey(key=auto.SpecialKeyNames['DELETE'], waitTime=0.2)
 
     edit.SendKeys(content)
     time.sleep(1)
@@ -34,4 +43,4 @@ def send_msg(content, chat_user):
 
 
 if __name__ == '__main__':
-    send_msg("内容", "李通")
+    send_msg("内容", "文件传输助手")
