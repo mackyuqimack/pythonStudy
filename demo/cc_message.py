@@ -18,7 +18,7 @@ def send_msg(content, chat_user):
     search = yg_window.EditControl(Name='按姓名/群名搜索')
     search.DoubleClick()
     search.SendKeys(chat_user)
-    time.sleep(1)
+    time.sleep(4)
 
     search.SendKey(key=auto.SpecialKeyNames['ENTER'], waitTime=0.2)
     edit = message.GetParentControl().GroupControl(Name='', AutomationId='msg-chat-input-editor-content')
@@ -31,7 +31,7 @@ def send_msg(content, chat_user):
         edit.SetFocus()
         time.sleep(1)
         edit.Click()
-        for i in range(2):
+        for i in range(5):
             time.sleep(1)
             auto.SendKey(key=auto.SpecialKeyNames['BACK'], waitTime=0.2)
             auto.SendKey(key=auto.SpecialKeyNames['DELETE'], waitTime=0.2)
@@ -40,6 +40,9 @@ def send_msg(content, chat_user):
     time.sleep(1)
     send = edit.GetParentControl().GetParentControl().ButtonControl(Name='发 送')
     send.DoubleClick()
+    # 关闭窗口
+    time.sleep(1)
+    auto.SendKeys(text='{Ctrl}{Shift}s')
 
 
 if __name__ == '__main__':
