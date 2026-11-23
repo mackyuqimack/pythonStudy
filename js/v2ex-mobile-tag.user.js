@@ -248,12 +248,20 @@
         });
     }
 
-    // 渲染列表页（首页/节点）：主题列表里 strong 的作者链接
+    // 渲染列表页（首页/节点）：主题列表里的作者
     function renderListPage() {
         if (!state.loaded) return;
-        var links = document.querySelectorAll('strong > a[href^="/member/"]');
-        links.forEach(function (a) {
+        // 情况1：作者带链接 <strong><a href="/member/xxx">用户名</a></strong>
+        var linkAuthors = document.querySelectorAll('strong > a[href^="/member/"]');
+        linkAuthors.forEach(function (a) {
             renderTagsForLink(a, a.textContent.trim(), { showAdd: false });
+        });
+        // 情况2：作者纯文本 <strong>用户名</strong>（节点页等旧模板，无链接）
+        var textStrongs = document.querySelectorAll('.small strong');
+        textStrongs.forEach(function (s) {
+            if (s.querySelector('a[href^="/member/"]')) return; // 跳过已处理带链接的
+            var name = s.textContent.trim();
+            if (name) renderTagsForLink(s, name, { showAdd: false });
         });
     }
 
@@ -263,18 +271,8 @@
         var h1 = document.querySelector('h1');
         if (h1) {
             var name = h1.textContent.trim();
-            // 用户名在 V2EX 大小写不敏感，href 可能是小写，遍历匹配
-            var links = document.querySelectorAll('a[href^="/member/"]');
-            var target = null;
-            for (var i = 0; i < links.length; i++) {
-                var href = links[i].getAttribute('href') || '';
-                var m = href.match(/^\/member\/([^\/]+)\/?$/);
-                if (m && m[1].toLowerCase() === name.toLowerCase()) {
-                    target = links[i];
-                    break;
-                }
-            }
-            if (target) renderTagsForLink(target, name, { showAdd: true });
+            // 用户名是纯文本 h1，直接以 h1 作为锚点插入标签（两套模板通用）
+            renderTagsForLink(h1, name, { showAdd: true });
         }
     }
 
