@@ -8,11 +8,7 @@
 // @match        https://v2ex.com/*
 // @match        https://www.v2ex.com/*
 // @match        https://*.v2ex.com/*
-// @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
-// @grant        GM_registerMenuCommand
-// @connect      v2ex.com
-// @connect      www.v2ex.com
 // @run-at       document-idle
 // ==/UserScript==
 
@@ -54,49 +50,19 @@
         return 'other';
     }
 
-    // ---------- 网络请求（GM_xmlhttpRequest，降级 fetch） ----------
+    // ---------- 网络请求（同源 fetch，自动携带 cookie，无需 GM 权限） ----------
     function httpGet(url) {
-        return new Promise(function (resolve, reject) {
-            if (typeof GM_xmlhttpRequest === 'function') {
-                GM_xmlhttpRequest({
-                    method: 'GET',
-                    url: url,
-                    onload: function (r) { resolve(r.responseText); },
-                    onerror: function (e) { reject(e); }
-                });
-            } else {
-                fetch(url, { credentials: 'same-origin' })
-                    .then(function (r) { return r.text(); })
-                    .then(resolve)
-                    .catch(reject);
-            }
-        });
+        return fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.text(); });
     }
 
     function httpPost(url, formData) {
-        return new Promise(function (resolve, reject) {
-            if (typeof GM_xmlhttpRequest === 'function') {
-                // GM_xmlhttpRequest 会自动携带同源 cookie
-                GM_xmlhttpRequest({
-                    method: 'POST',
-                    url: url,
-                    data: formData, // 由调用方保证是 URLSearchParams 或字符串
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    onload: function (r) { resolve({ status: r.status, finalUrl: r.finalUrl || url, text: r.responseText }); },
-                    onerror: function (e) { reject(e); }
-                });
-            } else {
-                fetch(url, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    body: formData
-                })
-                    .then(function (r) {
-                        return { status: r.status, finalUrl: r.url || url, text: '' };
-                    })
-                    .then(resolve)
-                    .catch(reject);
-            }
+        return fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData
+        }).then(function (r) {
+            return { status: r.status, finalUrl: r.url || url };
         });
     }
 
@@ -161,22 +127,35 @@
         });
     }
 
-    // 初始化：读取用户身份 + 加载标签
-    function initData() {
-        // 识别登录用户（工具条第二个链接一般是用户名）
+    // 识别登录用户（兼容桌面端 .tools 与移动端 #menu-entry）
+    function detectLoginUser() {
+        // 桌面端：顶部 .tools 里的 /member/ 链接
         var tools = document.querySelector('.tools');
         if (tools) {
-            var links = tools.querySelectorAll('a');
-            // 顶部结构：首页 / 用户名 / 记事本 ...，取第一个 /member/xxx 链接
+            var links = tools.querySelectorAll('a[href^="/member/"]');
             for (var i = 0; i < links.length; i++) {
-                var href = links[i].getAttribute('href') || '';
-                var m = href.match(/^\/member\/([^\/]+)/);
-                if (m) {
-                    state.me = m[1];
-                    break;
-                }
+                var m = (links[i].getAttribute('href') || '').match(/^\/member\/([^\/]+)/);
+                if (m) return m[1];
             }
         }
+        // 移动端：菜单入口头像的 alt 属性
+        var avatar = document.querySelector('#menu-entry img.avatar');
+        if (avatar) {
+            var alt = avatar.getAttribute('alt');
+            if (alt) return alt;
+        }
+        // 移动端兜底：菜单里第一个 /member/ 链接
+        var menuLink = document.querySelector('#site-header-menu a[href^="/member/"]');
+        if (menuLink) {
+            var m2 = (menuLink.getAttribute('href') || '').match(/^\/member\/([^\/]+)/);
+            if (m2) return m2[1];
+        }
+        return '';
+    }
+
+    // 初始化：读取用户身份 + 加载标签
+    function initData() {
+        state.me = detectLoginUser();
 
         if (!isLogin()) return Promise.resolve();
 
@@ -253,33 +232,27 @@
         a.parentNode.insertBefore(wrap, a.nextSibling);
     }
 
-    // 渲染主题详情页：主贴作者 + 每条回复作者
+    // 渲染主题详情页：主贴作者 + 每条回复作者（桌面端与移动端选择器一致）
     function renderTopicPage() {
         if (!state.loaded) return;
 
-        // 主贴作者：header 里 small.gray 中的 /member/ 链接
-        var header = document.querySelector('#Main .box .header');
-        if (header) {
-            var authorA = header.querySelector('small.gray > a[href^="/member/"]');
-            if (authorA) {
-                renderTagsForLink(authorA, authorA.textContent.trim(), { showAdd: true });
-            }
+        // 主贴作者：small.gray 里的 /member/ 链接（两套模板结构相同）
+        var authorA = document.querySelector('small.gray > a[href^="/member/"]');
+        if (authorA) {
+            renderTagsForLink(authorA, authorA.textContent.trim(), { showAdd: true });
         }
 
-        // 回复作者：每个 .cell 里的 strong 中的 /member/ 链接
-        var cells = document.querySelectorAll('#Main .cell');
-        cells.forEach(function (cell) {
-            var strong = cell.querySelector('strong > a[href^="/member/"]');
-            if (strong) {
-                renderTagsForLink(strong, strong.textContent.trim(), { showAdd: true });
-            }
+        // 回复作者：strong 里的 /member/ 链接（两套模板结构相同）
+        var authors = document.querySelectorAll('strong > a[href^="/member/"]');
+        authors.forEach(function (a) {
+            renderTagsForLink(a, a.textContent.trim(), { showAdd: true });
         });
     }
 
     // 渲染列表页（首页/节点）：主题列表里 strong 的作者链接
     function renderListPage() {
         if (!state.loaded) return;
-        var links = document.querySelectorAll('#Main strong > a[href^="/member/"]');
+        var links = document.querySelectorAll('strong > a[href^="/member/"]');
         links.forEach(function (a) {
             renderTagsForLink(a, a.textContent.trim(), { showAdd: false });
         });
@@ -288,11 +261,11 @@
     // 渲染用户主页
     function renderMemberPage() {
         if (!state.loaded) return;
-        var h1 = document.querySelector('#Main h1');
+        var h1 = document.querySelector('h1');
         if (h1) {
             var name = h1.textContent.trim();
             // 用户名在 V2EX 大小写不敏感，href 可能是小写，遍历匹配
-            var links = document.querySelectorAll('#Main a[href^="/member/"]');
+            var links = document.querySelectorAll('a[href^="/member/"]');
             var target = null;
             for (var i = 0; i < links.length; i++) {
                 var href = links[i].getAttribute('href') || '';
@@ -492,9 +465,7 @@
         ensureViewport();
         watchDom();
 
-        // 未登录时不做任何事
-        if (!isLogin()) return;
-
+        // 登录状态由 initData 内部判断（未登录则跳过加载与渲染）
         initData().then(function () {
             render();
         });
