@@ -66,17 +66,26 @@
     }
 
     // ---------- 记事本（标签存储） ----------
-    // 读取记事本列表，找到 --用户标签-- 对应的 id
+    // 读取记事本列表，找到 --用户标签-- 对应的 id（桌面端与移动端通用选择器）
     function findTagNoteId() {
         return httpGet(getOrigin() + '/notes').then(function (html) {
             var doc = new DOMParser().parseFromString(html, 'text/html');
-            var links = doc.querySelectorAll('#Main .note_item_title a');
+            // 通用选择器：两套模板都有 a[href^="/notes/"]，数字结尾的才是条目链接
+            var links = doc.querySelectorAll('a[href^="/notes/"]');
+            // 优先找有实际内容的标签条目（前缀 + JSON，例如 --用户标签--{...}）
             for (var i = 0; i < links.length; i++) {
                 var text = (links[i].textContent || '').trim();
-                if (text.indexOf(TAG_PREFIX) === 0) {
-                    var href = links[i].getAttribute('href') || '';
-                    var m = href.match(/(\d+)\/?$/);
+                if (text.indexOf(TAG_PREFIX) === 0 && text.length > TAG_PREFIX.length) {
+                    var m = (links[i].getAttribute('href') || '').match(/(\d+)\/?$/);
                     if (m) return m[1];
+                }
+            }
+            // 兜底：只有纯前缀的空条目时（历史误创建），复用它而不是再新建
+            for (var j = 0; j < links.length; j++) {
+                var text2 = (links[j].textContent || '').trim();
+                if (text2 === TAG_PREFIX) {
+                    var m2 = (links[j].getAttribute('href') || '').match(/(\d+)\/?$/);
+                    if (m2) return m2[1];
                 }
             }
             return '';
