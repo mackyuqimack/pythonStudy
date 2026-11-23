@@ -1,7 +1,6 @@
 // ==UserScript==
 // @name         V2EX 移动端用户标签
 // @name:zh-CN   V2EX 移动端用户标签
-// @namespace    https://github.com/zyronon/V2Next
 // @version      1.0.0
 // @description  在手机上给 V2EX 用户打标签并展示，与 PC 端 V2Next 脚本共用同一份记事本数据（--用户标签--），跨平台互通。
 // @author       cdp-inject
