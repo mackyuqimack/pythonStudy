@@ -2,13 +2,15 @@
 // @name         V2EX 移动端用户标签
 // @name:zh-CN   V2EX 移动端用户标签
 // @version      1.0.0
-// @description  在手机上给 V2EX 用户打标签并展示，与 PC 端 V2Next 脚本共用同一份记事本数据（--用户标签--），跨平台互通。
-// @author       cdp-inject
+// @description  在手机上给 V2EX 用户打标签并展示，存在记事本数据（--用户标签--），跨平台互通。
+// @author       mack
 // @match        https://v2ex.com/*
 // @match        https://www.v2ex.com/*
 // @match        https://*.v2ex.com/*
 // @grant        GM_addStyle
 // @run-at       document-idle
+// @license      MIT
+// @namespace    https://greasyfork.org/users/1636153
 // ==/UserScript==
 
 (function () {
@@ -51,17 +53,19 @@
 
     // ---------- 网络请求（同源 fetch，自动携带 cookie，无需 GM 权限） ----------
     function httpGet(url) {
-        return fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.text(); });
+        return fetch(url, {credentials: 'same-origin'}).then(function (r) {
+            return r.text();
+        });
     }
 
     function httpPost(url, formData) {
         return fetch(url, {
             method: 'POST',
             credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: formData
         }).then(function (r) {
-            return { status: r.status, finalUrl: r.url || url };
+            return {status: r.status, finalUrl: r.url || url};
         });
     }
 
@@ -247,13 +251,13 @@
         // 主贴作者：small.gray 里的 /member/ 链接（两套模板结构相同）
         var authorA = document.querySelector('small.gray > a[href^="/member/"]');
         if (authorA) {
-            renderTagsForLink(authorA, authorA.textContent.trim(), { showAdd: true });
+            renderTagsForLink(authorA, authorA.textContent.trim(), {showAdd: true});
         }
 
         // 回复作者：strong 里的 /member/ 链接（两套模板结构相同）
         var authors = document.querySelectorAll('strong > a[href^="/member/"]');
         authors.forEach(function (a) {
-            renderTagsForLink(a, a.textContent.trim(), { showAdd: true });
+            renderTagsForLink(a, a.textContent.trim(), {showAdd: true});
         });
     }
 
@@ -263,14 +267,14 @@
         // 情况1：作者带链接 <strong><a href="/member/xxx">用户名</a></strong>
         var linkAuthors = document.querySelectorAll('strong > a[href^="/member/"]');
         linkAuthors.forEach(function (a) {
-            renderTagsForLink(a, a.textContent.trim(), { showAdd: false });
+            renderTagsForLink(a, a.textContent.trim(), {showAdd: false});
         });
         // 情况2：作者纯文本 <strong>用户名</strong>（节点页等旧模板，无链接）
         var textStrongs = document.querySelectorAll('.small strong');
         textStrongs.forEach(function (s) {
             if (s.querySelector('a[href^="/member/"]')) return; // 跳过已处理带链接的
             var name = s.textContent.trim();
-            if (name) renderTagsForLink(s, name, { showAdd: false });
+            if (name) renderTagsForLink(s, name, {showAdd: false});
         });
     }
 
@@ -281,7 +285,7 @@
         if (h1) {
             var name = h1.textContent.trim();
             // 用户名是纯文本 h1，直接以 h1 作为锚点插入标签（两套模板通用）
-            renderTagsForLink(h1, name, { showAdd: true });
+            renderTagsForLink(h1, name, {showAdd: true});
         }
     }
 
@@ -304,9 +308,15 @@
 
     function addTag(username, tag) {
         tag = (tag || '').trim();
-        if (!tag) { toast('请输入标签', 'warn'); return; }
+        if (!tag) {
+            toast('请输入标签', 'warn');
+            return;
+        }
         var list = state.tags[username] || [];
-        if (list.indexOf(tag) > -1) { toast('标签已存在', 'warn'); return; }
+        if (list.indexOf(tag) > -1) {
+            toast('标签已存在', 'warn');
+            return;
+        }
         list.push(tag);
         state.tags[username] = list;
         persistAndRerender();
@@ -324,8 +334,12 @@
 
     function rerenderAll() {
         // 清掉已渲染标记，重新渲染
-        document.querySelectorAll('.v2m-tagwrap').forEach(function (n) { n.remove(); });
-        document.querySelectorAll('[data-v2m-tag]').forEach(function (n) { n.removeAttribute('data-v2m-tag'); });
+        document.querySelectorAll('.v2m-tagwrap').forEach(function (n) {
+            n.remove();
+        });
+        document.querySelectorAll('[data-v2m-tag]').forEach(function (n) {
+            n.removeAttribute('data-v2m-tag');
+        });
         render();
     }
 
@@ -369,7 +383,9 @@
         modalEl.querySelector('.v2m-username').textContent = username;
         modalEl.querySelector('.v2m-input').value = '';
         modalEl.classList.add('show');
-        setTimeout(function () { modalEl.querySelector('.v2m-input').focus(); }, 50);
+        setTimeout(function () {
+            modalEl.querySelector('.v2m-input').focus();
+        }, 50);
     }
 
     function closeModal() {
@@ -378,6 +394,7 @@
 
     // ---------- UI：轻提示 ----------
     var toastEl = null;
+
     function toast(text, type) {
         if (!toastEl) {
             toastEl = document.createElement('div');
@@ -388,7 +405,9 @@
         toastEl.className = 'v2m-toast ' + (type || 'ok');
         toastEl.classList.add('show');
         clearTimeout(toast._t);
-        toast._t = setTimeout(function () { toastEl.classList.remove('show'); }, 1800);
+        toast._t = setTimeout(function () {
+            toastEl.classList.remove('show');
+        }, 1800);
     }
 
     // ---------- 移动端视口优化 ----------
@@ -413,6 +432,7 @@
 
     // ---------- 动态内容监听 ----------
     var scanTimer = null;
+
     function scheduleRender() {
         if (scanTimer) return;
         scanTimer = setTimeout(function () {
@@ -425,7 +445,7 @@
         var mo = new MutationObserver(function () {
             scheduleRender();
         });
-        mo.observe(document.body, { childList: true, subtree: true });
+        mo.observe(document.body, {childList: true, subtree: true});
     }
 
     // ---------- 样式 ----------
