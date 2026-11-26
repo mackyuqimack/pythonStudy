@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         V2EX 移动端用户标签
-// @name:zh-CN   V2EX 移动端用户标签
-// @version      1.0.0
-// @description  在手机上给 V2EX 用户打标签并展示，存在记事本数据（--用户标签--），跨平台互通。
+// @name         V2EX 用户标签
+// @name:zh-CN   V2EX 用户标签
+// @version      1.0.1
+// @description  在 V2EX 给用户打标签、展示标签的油猴脚本，桌面端与移动端通用。标签数据保存在 V2EX 自己的记事本（--用户标签--）中，与 PC 端 V2Next 脚本共用同一份数据、跨平台互通。
 // @author       mack
 // @match        https://v2ex.com/*
 // @match        https://www.v2ex.com/*
@@ -134,8 +134,8 @@
         var content = TAG_PREFIX + JSON.stringify(tags);
         var body = 'content=' + encodeURIComponent(content) + '&syntax=0';
         return httpPost(getOrigin() + '/notes/edit/' + state.noteId, body).then(function (r) {
-            // 编辑成功后通常会 302 回记事本页
-            return true;
+            // V2EX 编辑成功后通常会 302 重定向；fetch 跟随重定向后 status 为 2xx/3xx
+            return !!(r.status >= 200 && r.status < 400);
         });
     }
 
@@ -165,12 +165,29 @@
         return '';
     }
 
-    // 初始化：读取用户身份 + 加载标签
-    function initData() {
-        state.me = detectLoginUser();
+    // 本地缓存（加速首屏渲染，跨页复用记事本 id 与标签数据）
+    var CACHE_KEY_PREFIX = 'v2ex-tag-cache-';
 
-        if (!isLogin()) return Promise.resolve();
+    function loadCache(username) {
+        try {
+            var raw = localStorage.getItem(CACHE_KEY_PREFIX + username);
+            if (!raw) return null;
+            var obj = JSON.parse(raw);
+            return (obj && obj.noteId) ? obj : null;
+        } catch (e) {
+            return null;
+        }
+    }
 
+    function saveCache(username, data) {
+        try {
+            localStorage.setItem(CACHE_KEY_PREFIX + username, JSON.stringify(data));
+        } catch (e) {
+        }
+    }
+
+    // 从记事本刷新标签数据（找 id -> 读内容）
+    function refreshTagsFromNote() {
         return findTagNoteId().then(function (id) {
             var p;
             if (id) {
@@ -188,6 +205,26 @@
                     state.loaded = true;
                 });
             });
+        });
+    }
+
+    // 初始化：读取用户身份 + 加载标签
+    function initData() {
+        state.me = detectLoginUser();
+
+        if (!isLogin()) return Promise.resolve();
+
+        // 先用本地缓存快速渲染，再后台刷新
+        var cache = loadCache(state.me);
+        if (cache) {
+            state.noteId = cache.noteId;
+            state.tags = cache.tags || {};
+            state.loaded = true;
+            render();
+        }
+
+        return refreshTagsFromNote().then(function () {
+            saveCache(state.me, {noteId: state.noteId, tags: state.tags, updatedAt: Date.now()});
         }).catch(function (e) {
             console.warn('[V2EX标签] 初始化失败', e);
         });
@@ -209,6 +246,7 @@
             var chip = document.createElement('span');
             chip.className = 'v2m-tag';
             chip.setAttribute('data-tag', t);
+            chip.title = t;
             var label = document.createElement('span');
             label.textContent = t;
             var del = document.createElement('i');
@@ -298,12 +336,13 @@
 
     // ---------- UI：添加/删除标签 ----------
     function removeTag(username, tag) {
-        if (!confirm('删除对 ' + username + ' 的标签「' + tag + '」？')) return;
-        var list = state.tags[username] || [];
-        var idx = list.indexOf(tag);
-        if (idx > -1) list.splice(idx, 1);
-        state.tags[username] = list;
-        persistAndRerender();
+        openConfirm('删除对 ' + username + ' 的标签「' + tag + '」？', function () {
+            var list = state.tags[username] || [];
+            var idx = list.indexOf(tag);
+            if (idx > -1) list.splice(idx, 1);
+            state.tags[username] = list;
+            persistAndRerender();
+        });
     }
 
     function addTag(username, tag) {
@@ -325,7 +364,11 @@
 
     function persistAndRerender() {
         saveTagsToNote(state.tags).then(function (ok) {
-            if (!ok) toast('标签保存失败', 'error');
+            if (!ok) {
+                toast('标签保存失败', 'error');
+            } else {
+                saveCache(state.me, {noteId: state.noteId, tags: state.tags, updatedAt: Date.now()});
+            }
             rerenderAll();
         }).catch(function () {
             toast('标签保存失败', 'error');
@@ -390,6 +433,45 @@
 
     function closeModal() {
         if (modalEl) modalEl.classList.remove('show');
+    }
+
+    // ---------- UI：删除确认弹窗 ----------
+    var confirmEl = null;
+    var confirmCallback = null;
+
+    function ensureConfirmModal() {
+        if (confirmEl) return;
+        confirmEl = document.createElement('div');
+        confirmEl.className = 'v2m-modal';
+        confirmEl.innerHTML =
+            '<div class="v2m-mask"></div>' +
+            '<div class="v2m-dialog">' +
+            '  <div class="v2m-title">删除标签</div>' +
+            '  <div class="v2m-confirm-text"></div>' +
+            '  <div class="v2m-btns">' +
+            '    <button class="v2m-btn v2m-cancel" type="button">取消</button>' +
+            '    <button class="v2m-btn v2m-ok" type="button">删除</button>' +
+            '  </div>' +
+            '</div>';
+        document.body.appendChild(confirmEl);
+        confirmEl.querySelector('.v2m-mask').addEventListener('click', closeConfirm);
+        confirmEl.querySelector('.v2m-cancel').addEventListener('click', closeConfirm);
+        confirmEl.querySelector('.v2m-ok').addEventListener('click', function () {
+            var cb = confirmCallback;
+            closeConfirm();
+            if (cb) cb();
+        });
+    }
+
+    function openConfirm(text, cb) {
+        ensureConfirmModal();
+        confirmEl.querySelector('.v2m-confirm-text').textContent = text;
+        confirmCallback = cb;
+        confirmEl.classList.add('show');
+    }
+
+    function closeConfirm() {
+        if (confirmEl) confirmEl.classList.remove('show');
     }
 
     // ---------- UI：轻提示 ----------
@@ -458,6 +540,11 @@
             '.v2m-del:hover{color:#ef4444;background:#fee2e2;}',
             '.v2m-add{box-sizing:border-box;min-width:20px;height:20px;padding:0 4px;border:1px dashed #94a3b8;border-radius:10px;background:transparent;color:#64748b;font-size:14px;line-height:18px;cursor:pointer;}',
             '.v2m-add:active{background:#eef2ff;}',
+            '.v2m-desktop .v2m-add{opacity:0;transition:opacity .15s;}',
+            '.v2m-desktop .v2m-tagwrap:hover .v2m-add{opacity:1;}',
+            '.v2m-desktop a[href^="/member/"]:hover + .v2m-tagwrap .v2m-add{opacity:1;}',
+            '.v2m-desktop h1:hover + .v2m-tagwrap .v2m-add{opacity:1;}',
+            '.v2m-mobile .v2m-add{opacity:1;}',
             '.v2m-modal{display:none;position:fixed;inset:0;z-index:2147483000;}',
             '.v2m-modal.show{display:block;}',
             '.v2m-mask{position:absolute;inset:0;background:rgba(15,23,42,.45);}',
@@ -465,6 +552,7 @@
             '.v2m-title{font-size:16px;font-weight:700;color:#0f172a;margin-bottom:10px;}',
             '.v2m-user{font-size:13px;color:#64748b;margin-bottom:10px;word-break:break-all;}',
             '.v2m-user b{color:#334155;}',
+            '.v2m-confirm-text{font-size:14px;color:#334155;margin-bottom:10px;word-break:break-all;}',
             '.v2m-input{box-sizing:border-box;width:100%;height:40px;border:1px solid #e2e8f0;border-radius:8px;padding:0 12px;font-size:14px;outline:none;background:#f8fafc;}',
             '.v2m-input:focus{border-color:#2f6fed;background:#fff;}',
             '.v2m-btns{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;}',
@@ -487,6 +575,9 @@
 
     // ---------- 启动 ----------
     function boot() {
+        // 标记设备类型，用于 CSS 控制 + 按钮的显示方式（桌面 hover 显示 / 移动常显）
+        document.documentElement.classList.add(isMobileDevice() ? 'v2m-mobile' : 'v2m-desktop');
+
         addStyles();
         ensureViewport();
         watchDom();
